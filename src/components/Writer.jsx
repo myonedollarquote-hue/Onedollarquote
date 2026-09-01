@@ -6,7 +6,6 @@ import { LIMITS } from '@/lib/limits';
 
 export default function Writer() {
   const searchParams = useSearchParams();
-  const pageNumber = parseInt(searchParams.get('page') || '', 10);
   const sessionId = searchParams.get('session_id') || '';
 
   const [format, setFormat] = useState(null); // 'citation' | 'histoire'
@@ -16,6 +15,7 @@ export default function Writer() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [claimedPage, setClaimedPage] = useState(null);
 
   const limits = format ? LIMITS[format] : null;
 
@@ -25,10 +25,8 @@ export default function Writer() {
     return len >= limits.min && len <= limits.max;
   }, [text, limits]);
 
-  // Le lien est facultatif ; s'il est rempli, il doit commencer par http(s).
   const linkTrimmed = link.trim();
   const linkValid = linkTrimmed === '' || /^https?:\/\/.+/i.test(linkTrimmed);
-
   const canPublish = format && textValid && signature.trim().length >= 1 && linkValid && !busy;
 
   async function publish() {
@@ -39,7 +37,6 @@ export default function Writer() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          page_number: pageNumber,
           session_id: sessionId,
           content_type: format,
           content_text: text.trim(),
@@ -53,17 +50,18 @@ export default function Writer() {
         setBusy(false);
         return;
       }
+      setClaimedPage(json.page_number);
       setDone(true);
       setTimeout(() => {
-        window.location.href = `/?page=${pageNumber}`;
-      }, 900);
+        window.location.href = `/?page=${json.page_number || 1}`;
+      }, 1100);
     } catch {
       setError('Network unavailable.');
       setBusy(false);
     }
   }
 
-  if (!Number.isInteger(pageNumber) || !sessionId) {
+  if (!sessionId) {
     return (
       <div className="writer">
         <h1>Invalid link</h1>
@@ -77,7 +75,9 @@ export default function Writer() {
     return (
       <div className="writer">
         <h1>Published ✦</h1>
-        <p className="sub">Your page is now part of the book, forever. Redirecting…</p>
+        <p className="sub">
+          Your page is now part of the book{claimedPage ? ` — page ${claimedPage}` : ''}, forever. Redirecting…
+        </p>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function Writer() {
 
   return (
     <div className="writer">
-      <h1>Page {pageNumber} unlocked</h1>
+      <h1>Your page is unlocked</h1>
       <p className="sub">Choose a format, write, and sign. Publishing is permanent.</p>
 
       {error && <div className="msg-error">{error}</div>}

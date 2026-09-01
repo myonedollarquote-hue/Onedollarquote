@@ -283,6 +283,29 @@ body {
   color: #b4442e; font-size: 0.82rem; line-height: 1.45;
 }
 
+/* ── Agrandir une page (mobile) ───────────────────────────── */
+.leaf__zoom { display: none; }
+@media (max-width: 640px) {
+  .leaf__zoom {
+    display: grid; place-items: center;
+    position: absolute; bottom: 12px;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid rgba(27, 24, 21, 0.16);
+    background: rgba(251, 249, 243, 0.96); color: var(--ink);
+    box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.45);
+    z-index: 6; cursor: pointer;
+  }
+  .leaf--left .leaf__zoom { left: 12px; }
+  .leaf--right .leaf__zoom { right: 12px; }
+}
+
+/* Mode page unique (plein écran) */
+.book.is-focus-left, .book.is-focus-right { grid-template-columns: 1fr; }
+.book.is-focus-left .leaf--right, .book.is-focus-right .leaf--left { display: none; }
+.book.is-focus-left .leaf--left::after, .book.is-focus-right .leaf--right::after { display: none; }
+.book.is-focus-left .leaf--left { border-radius: 6px; }
+.book.is-focus-right .leaf--right { border-radius: 6px; }
+
 
 /* ── Page admin ───────────────────────────────────────────── */
 .admin { min-height: 100dvh; padding: 32px 16px; display: flex; justify-content: center; }
