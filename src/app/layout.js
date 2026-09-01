@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'The Book — one page, one story',
-  description: 'A virtual open book. Each page unlocks for €1 and is written forever.',
+  title: 'One Dollar Quote',
+  description: 'A living book written by strangers. Unlock a page for €1 and leave your words forever.',
 };
 
 export default function RootLayout({ children }) {
