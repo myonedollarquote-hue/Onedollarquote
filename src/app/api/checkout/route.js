@@ -42,6 +42,9 @@ export async function POST(req) {
         },
       ],
       metadata: { page_number: String(pageNumber) },
+      // Case « J'accepte les conditions » affichée et ENREGISTRÉE par Stripe au paiement.
+      // Nécessite d'avoir renseigné l'URL des CGV dans le Dashboard Stripe (voir instructions).
+      consent_collection: { terms_of_service: 'required' },
       success_url: `${siteUrl}/write?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/?page=${pageNumber}`,
     });

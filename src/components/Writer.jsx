@@ -120,8 +120,9 @@ export default function Writer() {
               {len < limits.min ? ` — ${limits.min - len} more to go.` : ''}
             </div>
             <span className="notice-warn">
-              Offensive, racist, or politically or religiously charged content will lead to your
-              page being removed and refunded.
+              No racism, hate, harassment, threats, impersonation, or illegal content. Personal
+              promotion is allowed, but spam or abuse leads to removal without a refund. See the{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer">Terms</a>.
             </span>
           </div>
 
