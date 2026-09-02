@@ -11,14 +11,20 @@ function statusOf(p) {
   return { label: 'Blank', tone: 'muted' };
 }
 
+const emptyCreate = { page_number: '', content_type: 'citation', content_text: '', author_signature: '', author_link: '' };
+
 export default function Admin() {
-  const [authed, setAuthed] = useState(null); // null = vérification, false = login, true = ok
+  const [authed, setAuthed] = useState(null);
   const [password, setPassword] = useState('');
   const [pages, setPages] = useState([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(null); // page_number en édition
+  const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState({});
+
+  // Formulaire de création gratuite (admin)
+  const [showCreate, setShowCreate] = useState(false);
+  const [create, setCreate] = useState(emptyCreate);
 
   async function loadPages() {
     const res = await fetch('/api/admin/pages');
@@ -93,7 +99,30 @@ export default function Admin() {
     loadPages();
   }
 
-  // ── Écran de connexion ──────────────────────────────────
+  // Publication gratuite (admin)
+  const createLimits = LIMITS[create.content_type];
+  const createLen = create.content_text.trim().length;
+  const createTextValid = createLen >= createLimits.min && createLen <= createLimits.max;
+  const createLinkValid = create.author_link.trim() === '' || /^https?:\/\/.+/i.test(create.author_link.trim());
+  const canCreate = createTextValid && create.author_signature.trim().length >= 1 && createLinkValid && !busy;
+
+  async function publishFree() {
+    setMsg('');
+    setBusy(true);
+    const res = await fetch('/api/admin/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(create),
+    });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) { setMsg(json.error || 'Could not publish.'); return; }
+    setMsg(`Published for free on page ${json.page_number}.`);
+    setCreate(emptyCreate);
+    setShowCreate(false);
+    loadPages();
+  }
+
   if (authed === null) {
     return <div className="admin"><div className="admin__panel admin__center">Loading…</div></div>;
   }
@@ -121,19 +150,82 @@ export default function Admin() {
     );
   }
 
-  // ── Tableau de gestion ──────────────────────────────────
   return (
     <div className="admin">
       <div className="admin__panel">
         <div className="admin__topbar">
           <h1>Book admin</h1>
           <div className="admin__actions-top">
+            <button className="btn btn--primary" onClick={() => setShowCreate((s) => !s)}>
+              {showCreate ? 'Close' : '+ Write a page (free)'}
+            </button>
             <a className="btn btn--muted" href="/">Open the book</a>
             <button className="btn btn--muted" onClick={logout}>Log out</button>
           </div>
         </div>
 
         {msg && <div className="admin__msg">{msg}</div>}
+
+        {showCreate && (
+          <div className="admin__row admin__createbox">
+            <div className="admin__row-head">
+              <span className="admin__pn">Write a page — free (admin)</span>
+            </div>
+            <div className="admin__edit">
+              <label className="admin__lbl">
+                Page number <span className="admin__muted">(leave empty for the next free page)</span>
+              </label>
+              <input
+                type="number" min="1" placeholder="e.g. 1 — or empty"
+                value={create.page_number}
+                onChange={(e) => setCreate((c) => ({ ...c, page_number: e.target.value }))}
+              />
+
+              <div className="admin__edit-formats">
+                <label>
+                  <input type="radio" name="c-format" checked={create.content_type === 'citation'}
+                    onChange={() => setCreate((c) => ({ ...c, content_type: 'citation' }))} /> Quote
+                </label>
+                <label>
+                  <input type="radio" name="c-format" checked={create.content_type === 'histoire'}
+                    onChange={() => setCreate((c) => ({ ...c, content_type: 'histoire' }))} /> Story
+                </label>
+              </div>
+
+              <textarea
+                rows={create.content_type === 'citation' ? 3 : 8}
+                maxLength={createLimits.max}
+                placeholder={create.content_type === 'citation' ? 'A line worth remembering…' : 'Once, I…'}
+                value={create.content_text}
+                onChange={(e) => setCreate((c) => ({ ...c, content_text: e.target.value }))}
+              />
+              <div className="admin__muted admin__count">
+                {createLen} / {createLimits.max}
+                {createLen < createLimits.min ? ` — ${createLimits.min - createLen} more to go.` : ''}
+              </div>
+
+              <input
+                type="text" placeholder="Signature" maxLength={60}
+                value={create.author_signature}
+                onChange={(e) => setCreate((c) => ({ ...c, author_signature: e.target.value }))}
+              />
+              <input
+                type="text" placeholder="Link (optional) — https://…" maxLength={300}
+                value={create.author_link}
+                onChange={(e) => setCreate((c) => ({ ...c, author_link: e.target.value }))}
+              />
+
+              <div className="admin__row-actions">
+                <button className="btn btn--primary" onClick={publishFree} disabled={!canCreate}>
+                  {busy ? 'Publishing…' : 'Publish for free'}
+                </button>
+                <button className="btn btn--muted" onClick={() => { setCreate(emptyCreate); setShowCreate(false); }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {pages.length === 0 ? (
           <p className="admin__empty">No pages yet.</p>
@@ -165,7 +257,7 @@ export default function Admin() {
                         )}
                         <button
                           className="btn btn--muted"
-                          disabled={busy || !p.stripe_session_id}
+                          disabled={busy || !p.stripe_session_id || String(p.stripe_session_id).startsWith('admin-')}
                           onClick={() => act('/api/admin/refund', p.page_number,
                             `Refund €1 for page ${p.page_number}? (Stripe fees are not returned.)`,
                             `Page ${p.page_number} refunded.`)}

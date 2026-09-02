@@ -361,6 +361,10 @@ body {
   border-radius: 8px; border: 1.5px solid rgba(27, 24, 21, 0.16); background: #fff; width: 100%; resize: vertical;
 }
 .admin__edit textarea:focus, .admin__edit input:focus { outline: none; border-color: var(--gilt); }
+.admin__createbox { background: #fbf6ec; border-color: rgba(176, 138, 74, 0.4); }
+.admin__lbl { font-size: 0.9rem; font-weight: 500; }
+.admin__muted { color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+.admin__count { text-align: right; }
 
 .btn { font-family: var(--ui); font-weight: 600; font-size: 0.9rem; border: none; border-radius: 8px; padding: 9px 16px; cursor: pointer; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
